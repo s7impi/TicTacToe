@@ -20,35 +20,48 @@ public class TicTacToe {
 		
 		Board board = new Board();
 		State state = State.GAMEPLAY;
-		drawBoard(board);
 		
 		while (state == State.GAMEPLAY)
 		{
-			playerMove(board, currentPlayer);
 			drawBoard(board);
-			//currentPlayer = switchPlayers();
 			switchPlayers();
-			state = checkState(board);
+			playerMove(board, currentPlayer);
+			//currentPlayer = switchPlayers();
+			state = checkState(board, currentPlayer);
 		}
+		
+		drawBoard(board);
+		
+		if (state == State.WIN_X)
+			System.out.println("Wygral X!");
+		else if (state == State.WIN_O)
+			System.out.println("Wygral O!");
+		else
+			System.out.println("Remis!");
 	}
-	
-	public static State checkState(Board board) {
+
+	public static State checkState(Board board, Player player) {
 		Value winner = Value.EMPTY;
 		
-		for (int i = 0; i < 3; ++i)
-		{
+		// draw
+		if (board.getOccupiedFields() == 9)
+			return State.DRAW;
+		
+		// win
+		for (int i = 0; i < 3; ++i) {			
 			// horizontal
-			if (board.getField(i, 0) == board.getField(i, 1) && board.getField(i, 1) == board.getField(i, 2))
-				winner = board.getField(i, 0).getValue();
+			if (board.getFieldValue(i, 0) == player.getValue() && board.getFieldValue(i, 1) == player.getValue() && board.getFieldValue(i, 2) == player.getValue())
+				winner = board.getFieldValue(i, 0);
 			// vertical
-			if (board.getField(0, i) == board.getField(1, i) && board.getField(1, i) == board.getField(2, i))
-				winner = board.getField(0, i).getValue();
+			if (board.getFieldValue(0, i) == player.getValue() && board.getFieldValue(1, i) == player.getValue() && board.getFieldValue(2, i) == player.getValue())
+				winner = board.getFieldValue(0, i);
 		}
+		
 		// diagonal
-		if (board.getField(0, 0) == board.getField(1, 1) && board.getField(1, 1) == board.getField(2, 2))
-			winner = board.getField(1, 1).getValue();
-		if (board.getField(0, 2) == board.getField(1, 1) && board.getField(1, 1) == board.getField(2, 0))
-			winner = board.getField(1, 1).getValue();
+		if (board.getFieldValue(0, 0) == player.getValue() && board.getFieldValue(1, 1) == player.getValue() && board.getFieldValue(2, 2) == player.getValue())
+			winner = board.getFieldValue(1, 1);
+		if (board.getFieldValue(0, 2) == player.getValue() && board.getFieldValue(1, 1) == player.getValue() && board.getFieldValue(2, 0) == player.getValue())
+			winner = board.getFieldValue(1, 1);
 		
 		if (winner == Value.X) 
 			return State.WIN_X;
@@ -60,19 +73,24 @@ public class TicTacToe {
 	
 	public static void playerMove(Board board, Player player) {
 		Scanner s = new Scanner(System.in);
-		int i, j;
+		int move, i, j;
 		
+		// FIXME: Exception handling: ArrayIndexOutOfBoundsException
 		do {
 			System.out.print("Wprowadz swoj ruch: ");
-			int move = s.nextInt();
+			move = s.nextInt();
 			i = (move - 1) / 3;
 			j = (move - 1) % 3;
+			/*
 			if (!(board.isEmpty(i, j)))
 				System.out.println("Pole zajete!");
-		} while (!(board.isEmpty(i, j)));
+			if (move < 1 || move > 9)
+				System.out.println("Pole niedozwolone!");
+			*/
+		} while (move < 1 || move > 9 || !(board.isEmpty(i, j)));
 		
-		s.close();
-		board.getField(i, j).setValue(player.getValue());
+		//s.close(); FIXME: (?)
+		board.move(i, j, player.getValue());
 	}
 	
 	// FIXME: sprawdzac po value i na tej podstawie robic toggle'a, a nie po obiektach ;o
@@ -84,18 +102,21 @@ public class TicTacToe {
 	}
 	
 	public static void drawBoard(Board board) {
-		for (int i = 0; i < 3; ++i)
+		for (int i = 0; i < 3; ++i) {
 			for (int j = 0; j < 3; ++j) {
 				if (board.getField(i, j).getValue() == Value.EMPTY)
-					System.out.print(i*3 + j);
+					System.out.print(i*3 + j + 1);
 				else if (board.getField(i, j).getValue() == Value.X)
 					System.out.print("X");
 				else
 					System.out.print("O");
-			System.out.print(" ");
+				
+				System.out.print(" ");
 			}
-		System.out.println();
+			System.out.println("");
+		}
 	}
+
 }
 
 enum Value {
@@ -121,18 +142,31 @@ class Player {
 }
 
 class Board {
-	private Field[][] fields;
+	private Field[][] fields = new Field[3][3];
+	private int occupiedFields;
 	
 	public Board() {
-		fields = new Field[3][3];
+		for (int i = 0; i < 3; ++i)
+			for (int j = 0; j < 3; ++j)
+				fields[i][j] = new Field();
+		occupiedFields = 0;
 	}
 	
 	public void move(int i, int j, Value value) {
 		fields[i][j].setValue(value);
+		++occupiedFields;
 	}
 	
 	public Field getField(int i, int j) {
 		return fields[i][j];
+	}
+	
+	public int getOccupiedFields() {
+		return occupiedFields;
+	}
+	
+	public Value getFieldValue(int i, int j) {
+		return fields[i][j].getValue();
 	}
 	
 	public boolean isEmpty(int i, int j) {
